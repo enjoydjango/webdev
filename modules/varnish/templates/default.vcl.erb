@@ -1,0 +1,89 @@
+backend default {
+      .host = "127.0.0.1";
+      .port = "8000";
+}
+
+sub vcl_recv {
+
+  # Pass anything other than GET and HEAD directly.
+  if (req.request != "GET" && req.request != "HEAD"){
+    return(pass);
+  }
+
+  # Remove all cookies that we don't need to know about. ANY remaining
+  # cookie will cause the request to pass-through to Apache.
+  # We only keep the session cookie.
+  # https://www.varnish-cache.org/docs/3.0/tutorial/cookies.html
+
+  if (req.http.Cookie) {
+    set req.http.Cookie = ";" + req.http.Cookie;
+    set req.http.Cookie = regsuball(req.http.Cookie, "; +", ";");
+    set req.http.Cookie = regsuball(req.http.Cookie, ";(sessionid|testcookie)=", "; \1=");
+    set req.http.Cookie = regsuball(req.http.Cookie, ";[^ ][^;]*", "");
+    set req.http.Cookie = regsuball(req.http.Cookie, "^[; ]+|[; ]+$", "");
+
+    if (req.http.Cookie == "") {
+      # If there are no remaining cookies, remove the cookie header. If there
+      # aren't any cookie headers, Varnish's default behavior will be to cache
+      # the page.
+      unset req.http.Cookie;
+      return(lookup);
+    }
+    else {
+      # If there are any cookies left (a session cookie), do not
+      # cache the page. Pass it on to Apache directly.
+      return (pass);
+    }
+  }
+
+}
+
+sub vcl_fetch {
+
+    # If the request is not a 2XX-3XX don't cache it
+    if (beresp.status >= 400) {
+      return (hit_for_pass);
+    }
+
+    # If the response is setting a cookie, don't cache.
+    if (beresp.http.Set-Cookie) {
+      return (hit_for_pass);
+    }
+
+    # If we've set any of this headers, don't cache.
+    if(beresp.http.Pragma ~ "no-cache" ||
+      beresp.http.Cache-Control ~ "no-cache" ||
+      beresp.http.Cache-Control ~ "private") {
+           return (hit_for_pass);
+    }
+
+    # This looks at the Cache-Control header in the response object to see
+    # whether the string 'max-age' appears within it. If it does, then it
+    # clears out any cookie related headers and places the response
+    # object in the cache.
+
+    if (beresp.http.Cache-Control ~ "max-age") {
+      unset beresp.http.Set-Cookie;
+      return (deliver);
+    }
+
+    # If we are here, this is a 2XX cacheable request.
+    # Cache it for 10 minutes.
+    set beresp.ttl = 10m;
+    return (deliver);
+
+}
+
+
+#
+# Called before a cached object is delivered to the client.
+#
+
+sub vcl_deliver {
+  # Set X-Cache
+  if (obj.hits > 0) {
+    set resp.http.X-Cache = "HIT";
+  } else {
+    set resp.http.X-Cache = "MISS";
+  }
+}

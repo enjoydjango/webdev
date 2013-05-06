@@ -18,6 +18,26 @@ node 'loadbalancer.example.com' inherits basenode {
 }
 
 
+#
+# loadbalancervarnish.example.com
+#
+# Load Balancer example node using nginx + HAProxy + Varnish
+#
+
+node 'loadbalancervarnish.example.com' inherits basenode {
+
+  # nginx
+  include nginx
+  include nginx::loadbalancervarnish
+
+  # aproxy
+  include varnish
+
+  # aproxy
+  include haproxy
+
+}
+
 
 #
 # web1.example.com

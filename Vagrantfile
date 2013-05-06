@@ -11,7 +11,6 @@ Vagrant::Config.run do |config|
     loadbalancer.vm.box_url = "https://dl.dropbox.com/u/567726/ubuntu-precise-64.box"
     loadbalancer.vm.host_name = "loadbalancer.example.com"
     loadbalancer.vm.network :hostonly, "33.33.33.10"
-    loadbalancer.vm.network :hostonly, "33.33.33.10"
   end
 
   config.vm.define :web1 do |web1|
@@ -26,6 +25,13 @@ Vagrant::Config.run do |config|
     web2.vm.box_url = "https://dl.dropbox.com/u/567726/ubuntu-precise-64.box"
     web2.vm.host_name = "web2.example.com"
     web2.vm.network :hostonly, "33.33.33.12"
+  end
+
+  config.vm.define :loadbalancervarnish do |loadbalancervarnish|
+    loadbalancervarnish.vm.box = "ubuntu-precise-64"
+    loadbalancervarnish.vm.box_url = "https://dl.dropbox.com/u/567726/ubuntu-precise-64.box"
+    loadbalancervarnish.vm.host_name = "loadbalancervarnish.example.com"
+    loadbalancervarnish.vm.network :hostonly, "33.33.33.13"
   end
 
 end

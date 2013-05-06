@@ -1,7 +1,8 @@
 class haproxy {
 
   package { 'haproxy':
-      ensure => installed
+      ensure => installed,
+      require => Exec['apt-get update']
   }
 
   file { '/etc/haproxy/haproxy.cfg':

@@ -3,7 +3,8 @@ import "classes/*.pp"
 class nginx {
 
   package { 'nginx':
-      ensure => installed
+      ensure => installed,
+      require => Exec['apt-get update']
   }
 
   file { '/etc/nginx/nginx.conf':
